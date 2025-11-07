@@ -1,1 +1,2219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced POS Deployment Tracker</title>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #2980b9;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Login Styles */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--bg-gradient);
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            min-width: 400px;
+        }
+
+        .login-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+        }
+
+        .user-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .user-btn {
+            padding: 15px 20px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .user-btn:hover {
+            background: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        /* Header Styles */
+        .app-header {
+            background: var(--bg-gradient);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .app-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+        }
+
+        .current-user {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        /* Navigation */
+        .app-nav {
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 15px 25px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--secondary-color);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            background: var(--light-color);
+            color: var(--primary-color);
+        }
+
+        .nav-tab.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+        }
+
+        /* Main Content */
+        .app-main {
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            width: 100%;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-primary { background: var(--accent-color); color: white; }
+        .btn-success { background: var(--success-color); color: white; }
+        .btn-warning { background: var(--warning-color); color: white; }
+        .btn-danger { background: var(--danger-color); color: white; }
+        .btn-info { background: var(--info-color); color: white; }
+        .btn-secondary { background: var(--secondary-color); color: white; }
+
+        .btn-lg {
+            padding: 15px 30px;
+            font-size: 16px;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-left: 5px solid var(--accent-color);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--accent-color);
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: var(--secondary-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        /* Division Stats */
+        .division-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .division-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-left: 5px solid var(--success-color);
+        }
+
+        .division-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .division-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .division-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .division-stat {
+            text-align: center;
+            padding: 10px;
+            background: var(--light-color);
+            border-radius: 8px;
+        }
+
+        .division-stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        .division-stat-label {
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+            font-weight: 600;
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 50px auto;
+            padding: 40px;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--secondary-color);
+        }
+
+        .close:hover {
+            color: var(--danger-color);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        /* Progress Bars */
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e1e5e9;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success-color);
+            transition: width 0.5s ease;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+        .mb-20 { margin-bottom: 20px; }
+        .mb-30 { margin-bottom: 30px; }
+        .flex { display: flex; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .flex-center { display: flex; justify-content: center; align-items: center; }
+        .gap-10 { gap: 10px; }
+        .gap-15 { gap: 15px; }
+        .gap-20 { gap: 20px; }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light-color);
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        /* Location Cards */
+        .location-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-left: 5px solid var(--success-color);
+        }
+
+        .location-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .location-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-in-progress { background: #fff3cd; color: #856404; }
+        .status-pending { background: #f8d7da; color: #721c24; }
+
+        .location-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            padding: 12px;
+            background: var(--light-color);
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .filter-select {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 150px;
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        .data-table th {
+            background: var(--primary-color);
+            color: white;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .data-table tr:hover {
+            background: var(--light-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .nav-tabs {
+                justify-content: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .division-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .filter-input,
+            .filter-select {
+                width: 100%;
+                min-width: auto;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .location-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .modal-content {
+                margin: 20px;
+                padding: 25px;
+                width: calc(100% - 40px);
+            }
+
+            .user-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <h1 class="login-title">POS Deployment Tracker</h1>
+            <p style="color: var(--secondary-color); margin-bottom: 30px;">Select your user account to continue</p>
+            <div class="user-buttons">
+                <button class="user-btn" onclick="login('KARNA')">KARNA</button>
+                <button class="user-btn" onclick="login('NKR')">NKR</button>
+                <button class="user-btn" onclick="login('SKR')">SKR</button>
+                <button class="user-btn" onclick="login('BGR')">BGR</button>
+                <button class="user-btn" onclick="login('SBI_DOP')">SBI_DOP</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="app-container hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div>
+                    <h1 class="app-title">POS Deployment Tracker</h1>
+                    <p style="opacity: 0.9;">SBI-DOP POS Machines Deployment Management</p>
+                </div>
+                <div class="user-info">
+                    <div class="current-user" id="currentUser">User</div>
+                    <button class="btn btn-sm btn-warning" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="app-nav">
+            <div class="nav-container">
+                <div class="nav-tabs">
+                    <button class="nav-tab active" onclick="showTab('dashboard')">Dashboard</button>
+                    <button class="nav-tab" onclick="showTab('locations')">PO wise Details</button>
+                    <button class="nav-tab" onclick="showTab('progress')">Progress</button>
+                    <button class="nav-tab" onclick="showTab('reports')">Reports</button>
+                    <button class="nav-tab" onclick="showTab('data-management')">Data Management</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <div class="section-header">
+                    <h2 class="section-title">Deployment Dashboard</h2>
+                    <div class="flex gap-15">
+                        <button class="btn btn-success" onclick="exportDashboardPDF()">Export Dashboard PDF</button>
+                        <button class="btn btn-primary" onclick="showLocationForm()">Add Post Office</button>
+                    </div>
+                </div>
+
+                <!-- Overall Statistics -->
+                <div class="stats-grid" id="overallStats">
+                    <!-- Overall stats will be populated here -->
+                </div>
+
+                <!-- Division-wise Statistics -->
+                <div class="section-header">
+                    <h3 class="section-title">Division-wise Status</h3>
+                </div>
+                <div class="division-stats" id="divisionStats">
+                    <!-- Division stats will be populated here -->
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="section-header">
+                    <h3 class="section-title">Recent Activity</h3>
+                </div>
+                <div id="recentActivity">
+                    <!-- Recent activity will be shown here -->
+                </div>
+            </div>
+
+            <!-- Locations Tab -->
+            <div id="locations" class="tab-content">
+                <div class="section-header">
+                    <h2 class="section-title">All Locations</h2>
+                    <button class="btn btn-primary" onclick="showLocationForm()">Add Post Office</button>
+                </div>
+
+                <div class="filters">
+                    <input type="text" class="filter-input" id="searchInput" placeholder="🔍 Search locations..." onkeyup="filterLocations()">
+                    <select class="filter-select" id="divisionFilter" onchange="filterLocations()">
+                        <option value="">All Divisions</option>
+                    </select>
+                    <select class="filter-select" id="statusFilter" onchange="filterLocations()">
+                        <option value="">All Status</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Device Received">Device Received</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Failed">Failed</option>
+                    </select>
+                </div>
+
+                <div id="locationsList">
+                    <!-- Locations will be listed here -->
+                </div>
+            </div>
+
+            <!-- Progress Tab -->
+            <div id="progress" class="tab-content">
+                <div class="section-header">
+                    <h2 class="section-title">Progress Tracking</h2>
+                    <div class="flex gap-15">
+                        <select class="filter-select" id="progressDivisionFilter" onchange="filterProgressByDivision()">
+                            <option value="">All Divisions</option>
+                        </select>
+                        <button class="btn btn-info" onclick="exportProgressPDF()">Export Progress PDF</button>
+                    </div>
+                </div>
+
+                <div class="filters">
+                    <input type="text" class="filter-input" id="progressSearchInput" placeholder="🔍 Search for progress updates..." onkeyup="filterProgress()">
+                    <select class="filter-select" id="progressStatusFilter" onchange="filterProgress()">
+                        <option value="">All Status</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Device Received">Device Received</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+
+                <div id="progressList">
+                    <!-- Progress items will be shown here -->
+                </div>
+            </div>
+
+            <!-- Reports Tab -->
+            <div id="reports" class="tab-content">
+                <div class="section-header">
+                    <h2 class="section-title">Reports</h2>
+                    <div class="flex gap-15">
+                        <button class="btn btn-success" onclick="exportReportsPDF()">Export Reports PDF</button>
+                        <button class="btn btn-info" onclick="exportToExcel()">Export to Excel</button>
+                        <button class="btn btn-secondary" onclick="printReports()">🖨️ Print</button>
+                    </div>
+                </div>
+
+                <div id="reportsContent">
+                    <!-- Reports content will be generated here -->
+                </div>
+            </div>
+
+            <!-- Data Management Tab -->
+            <div id="data-management" class="tab-content">
+                <div class="section-header">
+                    <h2 class="section-title">💾 Data Management</h2>
+                </div>
+
+                <!-- Excel Import/Export Section -->
+                <div class="card mb-30">
+                    <h3 style="margin-bottom: 20px; color: var(--primary-color);">Dynamic Excel Management</h3>
+                    <div class="flex gap-15 mb-20" style="flex-wrap: wrap;">
+                        <button class="btn btn-success btn-lg" onclick="downloadTemplate()">📥 Download Template</button>
+                        <button class="btn btn-primary btn-lg" onclick="exportCurrentData()">📤 Export Current Data</button>
+                        <button class="btn btn-info btn-lg" onclick="showImportModal()">📊 Import Excel Data</button>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Dynamic Excel Management:</strong> Export your current data, edit in Excel (add/remove columns, modify data), then re-import to update the system automatically.
+                    </div>
+                </div>
+
+                <!-- Backup & Restore Section -->
+                <div class="card mb-30">
+                    <h3 style="margin-bottom: 20px; color: var(--primary-color);">Backup & Restore</h3>
+                    <div class="flex gap-15 mb-20" style="flex-wrap: wrap;">
+                        <button class="btn btn-warning btn-lg" onclick="createBackup()">💾 Create Backup</button>
+                        <button class="btn btn-secondary btn-lg" onclick="restoreBackup()">📂 Restore Backup</button>
+                        <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+                    </div>
+                </div>
+
+                <!-- Data Statistics -->
+                <div class="card">
+                    <h3 style="margin-bottom: 20px; color: var(--primary-color);">Data Statistics</h3>
+                    <div id="dataStatistics">
+                        <!-- Data statistics will be shown here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Location Form Modal -->
+    <div id="locationModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeLocationModal()">&times;</span>
+            <h2 id="modalTitle">Add New Location</h2>
+
+            <form id="locationForm" onsubmit="saveLocation(event)">
+                <!-- Basic Information -->
+                <h3 style="color: var(--success-color); margin: 20px 0 15px 0;">Basic Information</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="division">Division *</label>
+                        <input type="text" id="division" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="postOfficeName">Post Office Name *</label>
+                        <input type="text" id="postOfficeName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="postOfficeId">Post Office ID *</label>
+                        <input type="text" id="postOfficeId" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="officeType">Office Type</label>
+                        <select id="officeType">
+                            <option>Head Post Office</option>
+                            <option>Sub Post Office</option>
+                            <option>Branch Post Office</option>
+                            <option>Extra Departmental Branch</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactPersonName">Contact Person *</label>
+                        <input type="text" id="contactPersonName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactPersonNo">Contact Number *</label>
+                        <input type="tel" id="contactPersonNo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="city">City *</label>
+                        <input type="text" id="city" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="state">State *</label>
+                        <input type="text" id="state" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pincode">PIN Code *</label>
+                        <input type="text" id="pincode" pattern="[0-9]{6}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="numberOfPosToBeDeployed">POS Required *</label>
+                        <input type="number" id="numberOfPosToBeDeployed" min="1" required>
+                    </div>
+                </div>
+
+                <!-- Progress Information -->
+                <h3 style="color: var(--info-color); margin: 20px 0 15px 0;">Progress Information</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="dateOfReceiptOfDevice">Device Receipt Date</label>
+                        <input type="date" id="dateOfReceiptOfDevice">
+                    </div>
+                    <div class="form-group">
+                        <label for="noOfDevicesReceived">Devices Received</label>
+                        <input type="number" id="noOfDevicesReceived" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="installationStatus">Installation Status</label>
+                        <select id="installationStatus">
+                            <option>Pending</option>
+                            <option>Device Received</option>
+                            <option>In Progress</option>
+                            <option>Completed</option>
+                            <option>Failed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="functionalityStatus">Functionality Status</label>
+                        <select id="functionalityStatus">
+                            <option>Not Tested</option>
+                            <option>Testing</option>
+                            <option>Working</option>
+                            <option>Issues</option>
+                            <option>Under Maintenance</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="issuesIfAny">Issues (if any)</label>
+                        <textarea id="issuesIfAny" rows="3" placeholder="Describe any issues or write 'None'"></textarea>
+                    </div>
+                </div>
+
+                <div class="text-center" style="margin-top: 30px;">
+                    <button type="submit" class="btn btn-success btn-lg">💾 Save</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeLocationModal()">❌ Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeImportModal()">&times;</span>
+            <h2>Import Excel Data</h2>
+
+            <div style="margin: 20px 0;">
+                <input type="file" id="excelFileInput" accept=".xlsx,.xls" onchange="handleExcelImport(event)" style="margin-bottom: 20px;">
+                <div class="alert alert-info">
+                    <strong>Dynamic Import:</strong> Upload your modified Excel file. The system will automatically detect changes and update accordingly.
+                </div>
+            </div>
+
+            <div id="importPreview" class="hidden">
+                <h3>Import Preview</h3>
+                <div id="importPreviewContent"></div>
+                <div class="text-center" style="margin-top: 20px;">
+                    <button class="btn btn-success" onclick="confirmImport()">✅ Confirm Import</button>
+                    <button class="btn btn-secondary" onclick="cancelImport()">❌ Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file inputs -->
+    <input type="file" id="backupFileInput" accept=".json" class="hidden" onchange="handleBackupRestore(event)">
+
+    <script>
+        // Advanced POS Deployment Tracker with Multi-User Support and PDF Export
+        class AdvancedPOSTracker {
+            constructor() {
+                this.locations = [];
+                this.currentUser = null;
+                this.currentLocationId = null;
+                this.nextLocationId = 1;
+                this.importData = [];
+                this.users = ["KARNA", "NKR", "SKR", "BGR", "SBI_DOP"];
+                this.init();
+            }
+
+            init() {
+                this.loadFromStorage();
+                this.loadSampleData();
+                this.checkLoginStatus();
+            }
+
+            checkLoginStatus() {
+                const savedUser = localStorage.getItem('advancedPOSCurrentUser');
+                if (savedUser && this.users.includes(savedUser)) {
+                    this.currentUser = savedUser;
+                    this.showMainApp();
+                } else {
+                    this.showLoginScreen();
+                }
+            }
+
+            login(username) {
+                this.currentUser = username;
+                localStorage.setItem('advancedPOSCurrentUser', username);
+                this.showMainApp();
+            }
+
+            logout() {
+                this.currentUser = null;
+                localStorage.removeItem('advancedPOSCurrentUser');
+                this.showLoginScreen();
+            }
+
+            showLoginScreen() {
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+            }
+
+            showMainApp() {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('currentUser').textContent = this.currentUser;
+                this.setupEventListeners();
+                this.showTab('dashboard');
+                this.updateDashboard();
+            }
+
+            loadSampleData() {
+                if (this.locations.length === 0) {
+                    this.locations = [
+                        {
+                            id: 1, slNo: 1, division: "Chennai Division", postOfficeName: "Chennai GPO",
+                            postOfficeId: "CHN001", officeType: "Head Post Office", contactPersonName: "Rajesh Kumar",
+                            contactPersonNo: "9876543210", altContactNo: "9876543211", contactEmail: "rajesh.kumar@postoffice.gov.in",
+                            locationAddress: "Anna Salai, Chennai", location: "Central Chennai", city: "Chennai",
+                            state: "Tamil Nadu", pincode: "600001", numberOfPosToBeDeployed: 5,
+                            typeOfPosTerminal: "EZETAP ANDROID X990", dateOfReceiptOfDevice: "2024-08-15",
+                            noOfDevicesReceived: 5, serialNo: "EZT001,EZT002,EZT003,EZT004,EZT005",
+                            installationStatus: "Completed", functionalityStatus: "Working", issuesIfAny: "None"
+                        },
+                        {
+                            id: 2, slNo: 2, division: "Mumbai Division", postOfficeName: "Mumbai Central PO",
+                            postOfficeId: "MUM001", officeType: "Sub Post Office", contactPersonName: "Priya Sharma",
+                            contactPersonNo: "9876543212", altContactNo: "9876543213", contactEmail: "priya.sharma@postoffice.gov.in",
+                            locationAddress: "Mumbai Central Station Road", location: "Mumbai Central", city: "Mumbai",
+                            state: "Maharashtra", pincode: "400008", numberOfPosToBeDeployed: 3,
+                            typeOfPosTerminal: "EZETAP ANDROID X990", dateOfReceiptOfDevice: "2024-08-20",
+                            noOfDevicesReceived: 3, serialNo: "EZT006,EZT007,EZT008",
+                            installationStatus: "In Progress", functionalityStatus: "Testing", issuesIfAny: "Network connectivity issues"
+                        },
+                        {
+                            id: 3, slNo: 3, division: "Delhi Division", postOfficeName: "New Delhi GPO",
+                            postOfficeId: "DEL001", officeType: "Head Post Office", contactPersonName: "Amit Singh",
+                            contactPersonNo: "9876543214", altContactNo: "9876543215", contactEmail: "amit.singh@postoffice.gov.in",
+                            locationAddress: "Sansad Marg, New Delhi", location: "Central Delhi", city: "New Delhi",
+                            state: "Delhi", pincode: "110001", numberOfPosToBeDeployed: 4,
+                            typeOfPosTerminal: "EZETAP ANDROID X990", dateOfReceiptOfDevice: "",
+                            noOfDevicesReceived: 0, serialNo: "",
+                            installationStatus: "Pending", functionalityStatus: "Not Tested", issuesIfAny: "Awaiting device shipment"
+                        }
+                    ];
+                    this.nextLocationId = 4;
+                    this.saveToStorage();
+                }
+            }
+
+            saveToStorage() {
+                const data = {
+                    locations: this.locations,
+                    nextLocationId: this.nextLocationId,
+                    lastSaved: new Date().toISOString()
+                };
+                localStorage.setItem('advancedPOSTrackerData', JSON.stringify(data));
+            }
+
+            loadFromStorage() {
+                const stored = localStorage.getItem('advancedPOSTrackerData');
+                if (stored) {
+                    const data = JSON.parse(stored);
+                    this.locations = data.locations || [];
+                    this.nextLocationId = data.nextLocationId || 1;
+                }
+            }
+
+            setupEventListeners() {
+                window.addEventListener('click', (event) => {
+                    const modals = document.querySelectorAll('.modal');
+                    modals.forEach(modal => {
+                        if (event.target === modal) {
+                            modal.style.display = 'none';
+                        }
+                    });
+                });
+            }
+
+            showTab(tabName) {
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+
+                document.getElementById(tabName).classList.add('active');
+
+                if (event && event.target) {
+                    event.target.classList.add('active');
+                } else {
+                    const tabButtons = document.querySelectorAll('.nav-tab');
+                    tabButtons.forEach(btn => {
+                        if (btn.onclick && btn.onclick.toString().includes(tabName)) {
+                            btn.classList.add('active');
+                        }
+                    });
+                }
+
+                switch(tabName) {
+                    case 'dashboard':
+                        this.updateDashboard();
+                        break;
+                    case 'PO-wise-details':
+                        this.displayLocations();
+                        this.updateFilters();
+                        break;
+                    case 'progress':
+                        this.displayProgress();
+                        this.updateProgressFilters();
+                        break;
+                    case 'reports':
+                        this.generateReports();
+                        break;
+                    case 'data-management':
+                        this.updateDataStatistics();
+                        break;
+                }
+            }
+
+            updateDashboard() {
+                this.updateOverallStats();
+                this.updateDivisionStats();
+                this.updateRecentActivity();
+            }
+
+            updateOverallStats() {
+                const totalLocations = this.locations.length;
+                const totalDevicesDeployed = this.locations.reduce((sum, loc) => sum + (parseInt(loc.noOfDevicesReceived) || 0), 0);
+                const pendingInstallations = this.locations.filter(loc => loc.installationStatus === 'Pending').length;
+                const locationsWithIssues = this.locations.filter(loc => 
+                    loc.issuesIfAny && loc.issuesIfAny !== 'None' && loc.issuesIfAny.trim() !== ''
+                ).length;
+
+                const statsHTML = `
+                    <div class="stat-card">
+                        <div class="stat-number">${totalLocations}</div>
+                        <div class="stat-label">Total Locations</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${totalDevicesDeployed}</div>
+                        <div class="stat-label">Deployed Devices</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${pendingInstallations}</div>
+                        <div class="stat-label">Pending Installations</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${locationsWithIssues}</div>
+                        <div class="stat-label">Issues Reported</div>
+                    </div>
+                `;
+
+                document.getElementById('overallStats').innerHTML = statsHTML;
+            }
+
+            updateDivisionStats() {
+                const divisionData = {};
+
+                this.locations.forEach(location => {
+                    if (!divisionData[location.division]) {
+                        divisionData[location.division] = {
+                            total: 0,
+                            deployed: 0,
+                            pending: 0,
+                            issues: 0
+                        };
+                    }
+
+                    divisionData[location.division].total++;
+
+                    if (location.installationStatus === 'Completed') {
+                        divisionData[location.division].deployed++;
+                    } else {
+                        divisionData[location.division].pending++;
+                    }
+
+                    if (location.issuesIfAny && location.issuesIfAny !== 'None' && location.issuesIfAny.trim() !== '') {
+                        divisionData[location.division].issues++;
+                    }
+                });
+
+                let divisionHTML = '';
+
+                for (const [divisionName, stats] of Object.entries(divisionData)) {
+                    divisionHTML += `
+                        <div class="division-card">
+                            <div class="division-header">
+                                <div class="division-name">${divisionName}</div>
+                                <button class="btn btn-sm btn-info" onclick="tracker.filterByDivision('${divisionName}')">
+                                    View Details
+                                </button>
+                            </div>
+                            <div class="division-stats-grid">
+                                <div class="division-stat">
+                                    <div class="division-stat-number">${stats.total}</div>
+                                    <div class="division-stat-label">Total Locations</div>
+                                </div>
+                                <div class="division-stat">
+                                    <div class="division-stat-number">${stats.deployed}</div>
+                                    <div class="division-stat-label">Deployed</div>
+                                </div>
+                                <div class="division-stat">
+                                    <div class="division-stat-number">${stats.pending}</div>
+                                    <div class="division-stat-label">Pending</div>
+                                </div>
+                                <div class="division-stat">
+                                    <div class="division-stat-number">${stats.issues}</div>
+                                    <div class="division-stat-label">Issues</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('divisionStats').innerHTML = divisionHTML;
+            }
+
+            updateRecentActivity() {
+                const recentLocations = this.locations.slice(-5).reverse();
+                let html = '';
+
+                if (recentLocations.length === 0) {
+                    html = `
+                        <div class="alert alert-info">
+                            <h4>🚀 Welcome to Advanced POS Tracker!</h4>
+                            <p>Start by importing your Excel data or adding locations manually.</p>
+                            <div style="margin-top: 15px;">
+                                <button class="btn btn-primary" onclick="tracker.showTab('data-management')">📊 Manage Data</button>
+                                <button class="btn btn-success" onclick="tracker.showLocationForm()">➕ Add Location</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    recentLocations.forEach(location => {
+                        const statusClass = this.getStatusClass(location.installationStatus);
+                        const progressPercentage = this.calculateProgress(location);
+
+                        html += `
+                            <div class="location-card">
+                                <div class="location-header">
+                                    <div class="location-title">${location.postOfficeName}</div>
+                                    <span class="status-badge ${statusClass}">${location.installationStatus}</span>
+                                </div>
+                                <div class="location-details">
+                                    <div class="detail-item">
+                                        <div class="detail-label">Division</div>
+                                        <div class="detail-value">${location.division}</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">City</div>
+                                        <div class="detail-value">${location.city}</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Progress</div>
+                                        <div class="detail-value">${progressPercentage}%</div>
+                                    </div>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                document.getElementById('recentActivity').innerHTML = html;
+            }
+
+            getStatusClass(status) {
+                switch(status) {
+                    case 'Completed': return 'status-completed';
+                    case 'In Progress': 
+                    case 'Device Received': return 'status-in-progress';
+                    default: return 'status-pending';
+                }
+            }
+
+            calculateProgress(location) {
+                if (location.numberOfPosToBeDeployed === 0) return 0;
+                return Math.round(((location.noOfDevicesReceived || 0) / location.numberOfPosToBeDeployed) * 100);
+            }
+
+            filterByDivision(divisionName) {
+                this.showTab('progress');
+                const divisionFilter = document.getElementById('progressDivisionFilter');
+                if (divisionFilter) {
+                    divisionFilter.value = divisionName;
+                    this.filterProgressByDivision();
+                }
+            }
+
+            // PDF Export Functions
+            exportDashboardPDF() {
+                if (typeof window.jsPDF === 'undefined') {
+                    alert('PDF library not loaded. Please refresh the page and try again.');
+                    return;
+                }
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(20);
+                doc.text('POS Deployment Dashboard Summary', 20, 30);
+
+                doc.setFontSize(12);
+                doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 45);
+                doc.text(`Generated by: ${this.currentUser}`, 20, 55);
+
+                const totalLocations = this.locations.length;
+                const totalDevices = this.locations.reduce((sum, loc) => sum + (loc.noOfDevicesReceived || 0), 0);
+                const pending = this.locations.filter(loc => loc.installationStatus === 'Pending').length;
+                const issues = this.locations.filter(loc => 
+                    loc.issuesIfAny && loc.issuesIfAny !== 'None' && loc.issuesIfAny.trim() !== ''
+                ).length;
+
+                doc.setFontSize(16);
+                doc.text('Overall Statistics', 20, 75);
+
+                doc.setFontSize(12);
+                doc.text(`Total Locations: ${totalLocations}`, 30, 90);
+                doc.text(`Deployed Devices: ${totalDevices}`, 30, 100);
+                doc.text(`Pending Installations: ${pending}`, 30, 110);
+                doc.text(`Issues Reported: ${issues}`, 30, 120);
+
+                doc.save(`POS-Dashboard-${new Date().toISOString().split('T')[0]}.pdf`);
+                alert('Dashboard PDF exported successfully!');
+            }
+
+            exportProgressPDF() {
+                if (typeof window.jsPDF === 'undefined') {
+                    alert('PDF library not loaded. Please refresh the page and try again.');
+                    return;
+                }
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(20);
+                doc.text('POS Deployment Progress Report', 20, 30);
+
+                doc.setFontSize(12);
+                doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 45);
+                doc.text(`Generated by: ${this.currentUser}`, 20, 55);
+
+                doc.save(`POS-Progress-${new Date().toISOString().split('T')[0]}.pdf`);
+                alert('Progress PDF exported successfully!');
+            }
+
+            exportReportsPDF() {
+                if (typeof window.jsPDF === 'undefined') {
+                    alert('PDF library not loaded. Please refresh the page and try again.');
+                    return;
+                }
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(20);
+                doc.text('POS Deployment Comprehensive Report', 20, 30);
+
+                doc.setFontSize(12);
+                doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 45);
+                doc.text(`Generated by: ${this.currentUser}`, 20, 55);
+
+                doc.save(`POS-Comprehensive-Report-${new Date().toISOString().split('T')[0]}.pdf`);
+                alert('Comprehensive report PDF exported successfully!');
+            }
+
+            // Location Management
+            showLocationForm() {
+                this.currentLocationId = null;
+                document.getElementById('modalTitle').textContent = 'Add New Location';
+                document.getElementById('locationForm').reset();
+                document.getElementById('locationModal').style.display = 'block';
+            }
+
+            closeLocationModal() {
+                document.getElementById('locationModal').style.display = 'none';
+            }
+
+            saveLocation(event) {
+                event.preventDefault();
+
+                const locationData = {
+                    division: document.getElementById('division').value,
+                    postOfficeName: document.getElementById('postOfficeName').value,
+                    postOfficeId: document.getElementById('postOfficeId').value,
+                    officeType: document.getElementById('officeType').value,
+                    contactPersonName: document.getElementById('contactPersonName').value,
+                    contactPersonNo: document.getElementById('contactPersonNo').value,
+                    city: document.getElementById('city').value,
+                    state: document.getElementById('state').value,
+                    pincode: document.getElementById('pincode').value,
+                    numberOfPosToBeDeployed: parseInt(document.getElementById('numberOfPosToBeDeployed').value),
+                    dateOfReceiptOfDevice: document.getElementById('dateOfReceiptOfDevice').value,
+                    noOfDevicesReceived: parseInt(document.getElementById('noOfDevicesReceived').value) || 0,
+                    installationStatus: document.getElementById('installationStatus').value,
+                    functionalityStatus: document.getElementById('functionalityStatus').value,
+                    issuesIfAny: document.getElementById('issuesIfAny').value || 'None',
+                    altContactNo: '',
+                    contactEmail: '',
+                    locationAddress: '',
+                    location: '',
+                    typeOfPosTerminal: 'EZETAP ANDROID X990',
+                    serialNo: ''
+                };
+
+                if (this.currentLocationId) {
+                    const index = this.locations.findIndex(loc => loc.id === this.currentLocationId);
+                    if (index !== -1) {
+                        this.locations[index] = { ...this.locations[index], ...locationData };
+                    }
+                } else {
+                    locationData.id = this.nextLocationId++;
+                    locationData.slNo = this.locations.length + 1;
+                    this.locations.push(locationData);
+                }
+
+                this.saveToStorage();
+                this.closeLocationModal();
+                this.updateDashboard();
+                alert('Location saved successfully!');
+            }
+
+            // Display Functions
+            displayLocations() {
+                this.renderLocationsList(this.locations);
+            }
+
+            renderLocationsList(locationsList) {
+                let html = '';
+
+                if (locationsList.length === 0) {
+                    html = `
+                        <div class="alert alert-info">
+                            <h4>No Post Office found</h4>
+                            <p>Add Post Offices to get started with deployment tracking.</p>
+                            <button class="btn btn-primary" onclick="tracker.showLocationForm()">Add Post Office(s)</button>
+                        </div>
+                    `;
+                } else {
+                    locationsList.forEach(location => {
+                        const statusClass = this.getStatusClass(location.installationStatus);
+                        const progressPercentage = this.calculateProgress(location);
+
+                        html += `
+                            <div class="location-card">
+                                <div class="location-header">
+                                    <div class="location-title">${location.postOfficeName} (${location.postOfficeId})</div>
+                                    <div class="flex gap-10">
+                                        <span class="status-badge ${statusClass}">${location.installationStatus}</span>
+                                        <button class="btn btn-sm btn-primary" onclick="tracker.editLocation(${location.id})">✏️ Edit</button>
+                                        <button class="btn btn-sm btn-danger" onclick="tracker.deleteLocation(${location.id})">🗑️ Delete</button>
+                                    </div>
+                                </div>
+
+                                <div class="location-details">
+                                    <div class="detail-item">
+                                        <div class="detail-label">Division</div>
+                                        <div class="detail-value">${location.division}</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Contact</div>
+                                        <div class="detail-value">${location.contactPersonName}</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Phone</div>
+                                        <div class="detail-value">${location.contactPersonNo}</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">City, State</div>
+                                        <div class="detail-value">${location.city}, ${location.state}</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">POS Required</div>
+                                        <div class="detail-value">${location.numberOfPosToBeDeployed}</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Devices Received</div>
+                                        <div class="detail-value">${location.noOfDevicesReceived || 0}</div>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 20px;">
+                                    <div class="flex-between mb-10">
+                                        <span style="font-weight: 600;">Deployment Progress</span>
+                                        <span style="font-weight: 700; color: var(--accent-color);">${progressPercentage}%</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                document.getElementById('locationsList').innerHTML = html;
+            }
+
+            editLocation(id) {
+                this.currentLocationId = id;
+                const location = this.locations.find(loc => loc.id === id);
+
+                if (location) {
+                    document.getElementById('modalTitle').textContent = 'Edit Location';
+
+                    Object.keys(location).forEach(key => {
+                        const element = document.getElementById(key);
+                        if (element && key !== 'id') {
+                            element.value = location[key] || '';
+                        }
+                    });
+
+                    document.getElementById('locationModal').style.display = 'block';
+                }
+            }
+
+            deleteLocation(id) {
+                if (confirm('Are you sure you want to delete this Post Office?')) {
+                    this.locations = this.locations.filter(loc => loc.id !== id);
+
+                    this.locations.forEach((loc, index) => {
+                        loc.slNo = index + 1;
+                    });
+
+                    this.saveToStorage();
+                    this.displayLocations();
+                    this.updateDashboard();
+                    alert('Post Office deleted successfully!');
+                }
+            }
+
+            // Filtering Functions
+            updateFilters() {
+                const divisions = [...new Set(this.locations.map(loc => loc.division))];
+                const divisionFilter = document.getElementById('divisionFilter');
+
+                if (divisionFilter) {
+                    divisionFilter.innerHTML = '<option value="">All Divisions</option>';
+                    divisions.forEach(division => {
+                        divisionFilter.innerHTML += `<option value="${division}">${division}</option>`;
+                    });
+                }
+            }
+
+            filterLocations() {
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                const divisionFilter = document.getElementById('divisionFilter').value;
+                const statusFilter = document.getElementById('statusFilter').value;
+
+                const filteredLocations = this.locations.filter(location => {
+                    const matchesSearch = location.postOfficeName.toLowerCase().includes(searchTerm) ||
+                                        location.division.toLowerCase().includes(searchTerm) ||
+                                        location.city.toLowerCase().includes(searchTerm);
+
+                    const matchesDivision = !divisionFilter || location.division === divisionFilter;
+                    const matchesStatus = !statusFilter || location.installationStatus === statusFilter;
+
+                    return matchesSearch && matchesDivision && matchesStatus;
+                });
+
+                this.renderLocationsList(filteredLocations);
+            }
+
+            // Progress Functions
+            displayProgress() {
+                this.renderLocationsList(this.locations);
+            }
+
+            updateProgressFilters() {
+                const divisions = [...new Set(this.locations.map(loc => loc.division))];
+                const progressDivisionFilter = document.getElementById('progressDivisionFilter');
+
+                if (progressDivisionFilter) {
+                    progressDivisionFilter.innerHTML = '<option value="">All Divisions</option>';
+                    divisions.forEach(division => {
+                        progressDivisionFilter.innerHTML += `<option value="${division}">${division}</option>`;
+                    });
+                }
+            }
+
+            filterProgressByDivision() {
+                const selectedDivision = document.getElementById('progressDivisionFilter').value;
+
+                if (selectedDivision) {
+                    const filteredLocations = this.locations.filter(loc => loc.division === selectedDivision);
+                    this.renderLocationsList(filteredLocations);
+                } else {
+                    this.renderLocationsList(this.locations);
+                }
+            }
+
+            filterProgress() {
+                const searchTerm = document.getElementById('progressSearchInput').value.toLowerCase();
+                const statusFilter = document.getElementById('progressStatusFilter').value;
+                const divisionFilter = document.getElementById('progressDivisionFilter').value;
+
+                const filteredLocations = this.locations.filter(location => {
+                    const matchesSearch = location.postOfficeName.toLowerCase().includes(searchTerm) ||
+                                        location.division.toLowerCase().includes(searchTerm);
+
+                    const matchesStatus = !statusFilter || location.installationStatus === statusFilter;
+                    const matchesDivision = !divisionFilter || location.division === divisionFilter;
+
+                    return matchesSearch && matchesStatus && matchesDivision;
+                });
+
+                this.renderLocationsList(filteredLocations);
+            }
+
+            // Reports Functions
+            generateReports() {
+                const divisionStats = this.calculateDivisionStats();
+                const issueLocations = this.getLocationsWithIssues();
+
+                let html = `
+                    <div class="section-header">
+                        <h3 class="section-title">Region Summary</h3>
+                    </div>
+                    <div class="stats-grid mb-30">
+                        <div class="stat-card">
+                            <div class="stat-number">${this.locations.length}</div>
+                            <div class="stat-label">Total Post Offices</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${this.locations.reduce((sum, loc) => sum + (loc.noOfDevicesReceived || 0), 0)}</div>
+                            <div class="stat-label">Total Devices Received</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${Math.round(this.getCompletionRate())}%</div>
+                            <div class="stat-label">Overall Completion %</div>
+                        </div>
+                    </div>
+                `;
+
+                html += `
+                    <div class="card mb-30">
+                        <h3 style="margin-bottom: 20px; color: var(--primary-color);">Division-wise Detailed Report</h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Division</th>
+                                    <th>Total Post Offices</th>
+                                    <th>Completed</th>
+                                    <th>In Progress</th>
+                                    <th>Pending</th>
+                                    <th>Issues</th>
+                                    <th>Completion %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                for (const [division, stats] of Object.entries(divisionStats)) {
+                    const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+                    html += `
+                        <tr>
+                            <td><strong>${division}</strong></td>
+                            <td>${stats.total}</td>
+                            <td>${stats.completed}</td>
+                            <td>${stats.inProgress}</td>
+                            <td>${stats.pending}</td>
+                            <td>${stats.issues}</td>
+                            <td><strong>${completionRate}%</strong></td>
+                        </tr>
+                    `;
+                }
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                if (issueLocations.length > 0) {
+                    html += `
+                        <div class="card mb-30">
+                            <h3 style="margin-bottom: 20px; color: var(--danger-color);">⚠️ Locations with Issues (${issueLocations.length})</h3>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Post Office</th>
+                                        <th>Division</th>
+                                        <th>Status</th>
+                                        <th>Issues</th>
+                                        <th>Contact</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    issueLocations.forEach(location => {
+                        html += `
+                            <tr>
+                                <td><strong>${location.postOfficeName}</strong></td>
+                                <td>${location.division}</td>
+                                <td>${location.installationStatus}</td>
+                                <td>${location.issuesIfAny}</td>
+                                <td>${location.contactPersonNo}</td>
+                            </tr>
+                        `;
+                    });
+
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('reportsContent').innerHTML = html;
+            }
+
+            calculateDivisionStats() {
+                const divisionStats = {};
+
+                this.locations.forEach(location => {
+                    if (!divisionStats[location.division]) {
+                        divisionStats[location.division] = {
+                            total: 0,
+                            completed: 0,
+                            inProgress: 0,
+                            pending: 0,
+                            issues: 0
+                        };
+                    }
+
+                    divisionStats[location.division].total++;
+
+                    switch(location.installationStatus) {
+                        case 'Completed':
+                            divisionStats[location.division].completed++;
+                            break;
+                        case 'In Progress':
+                        case 'Device Received':
+                            divisionStats[location.division].inProgress++;
+                            break;
+                        default:
+                            divisionStats[location.division].pending++;
+                    }
+
+                    if (location.issuesIfAny && location.issuesIfAny !== 'None' && location.issuesIfAny.trim() !== '') {
+                        divisionStats[location.division].issues++;
+                    }
+                });
+
+                return divisionStats;
+            }
+
+            getLocationsWithIssues() {
+                return this.locations.filter(loc => 
+                    loc.issuesIfAny && loc.issuesIfAny !== 'None' && loc.issuesIfAny.trim() !== ''
+                );
+            }
+
+            getCompletionRate() {
+                if (this.locations.length === 0) return 0;
+                const completed = this.locations.filter(loc => loc.installationStatus === 'Completed').length;
+                return (completed / this.locations.length) * 100;
+            }
+
+            // Data Management Functions
+            updateDataStatistics() {
+                const stats = {
+                    totalLocations: this.locations.length,
+                    totalDivisions: [...new Set(this.locations.map(loc => loc.division))].length,
+                    dataSize: new Blob([JSON.stringify(this.locations)]).size,
+                    lastModified: localStorage.getItem('advancedPOSTrackerData') ? 
+                        new Date(JSON.parse(localStorage.getItem('advancedPOSTrackerData')).lastSaved).toLocaleString() : 'Never'
+                };
+
+                const html = `
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.totalLocations}</div>
+                            <div class="stat-label">Total Post Offices</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.totalDivisions}</div>
+                            <div class="stat-label">Total Divisions</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${Math.round(stats.dataSize / 1024)}</div>
+                            <div class="stat-label">Data Size (KB)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Last Modified</div>
+                            <div style="font-size: 0.9rem; margin-top: 10px;">${stats.lastModified}</div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('dataStatistics').innerHTML = html;
+            }
+
+            // Excel Functions
+            downloadTemplate() {
+                if (typeof XLSX === 'undefined') {
+                    alert('Excel library not loaded. Please refresh the page and try again.');
+                    return;
+                }
+
+                const templateData = [
+                    [
+                        'Sl.No.', 'Division', 'POST OFFICE NAME', 'Post Office ID', 'Office Type',
+                        'NAME OF CONTACT PERSON AT THE LOCATION', 'CONTACT PERSON NO.', 'ALT CONTACT PERSON NO.',
+                        'CONTACT EMAIL ID', 'LOCATION ADDRESS', 'LOCATION', 'CITY', 'STATE', 'PINCODE',
+                        'NUMBER OF POS TO BE DEPLOYED', 'TYPE OF POS TERMINAL', 'Date of receipt of device',
+                        'No of devices received', 'Serial No', 'Installation status',
+                        'Functionality / Working status of POS machines', 'Issues if any'
+                    ],
+                    [
+                        1, 'Sample Division', 'Sample Post Office', 'SAMPLE001', 'Head Post Office',
+                        'Contact Person', '9876543210', '9876543211', 'contact@postoffice.gov.in',
+                        'Sample Address', 'Sample Location', 'Sample City', 'Sample State', '123456',
+                        5, 'EZETAP ANDROID X990', '', 0, '',
+                        'Pending', 'Not Tested', 'None'
+                    ]
+                ];
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(templateData);
+                XLSX.utils.book_append_sheet(wb, ws, "POS Template");
+                XLSX.writeFile(wb, "POS_Deployment_Template.xlsx");
+                alert('Template downloaded successfully!');
+            }
+
+            exportCurrentData() {
+                if (typeof XLSX === 'undefined') {
+                    alert('Excel library not loaded. Please refresh the page and try again.');
+                    return;
+                }
+
+                const exportData = [
+                    [
+                        'Sl.No.', 'Division', 'POST OFFICE NAME', 'Post Office ID', 'Office Type',
+                        'NAME OF CONTACT PERSON AT THE LOCATION', 'CONTACT PERSON NO.', 'ALT CONTACT PERSON NO.',
+                        'CONTACT EMAIL ID', 'LOCATION ADDRESS', 'LOCATION', 'CITY', 'STATE', 'PINCODE',
+                        'NUMBER OF POS TO BE DEPLOYED', 'TYPE OF POS TERMINAL', 'Date of receipt of device',
+                        'No of devices received', 'Serial No', 'Installation status',
+                        'Functionality / Working status of POS machines', 'Issues if any'
+                    ]
+                ];
+
+                this.locations.forEach(location => {
+                    exportData.push([
+                        location.slNo || '',
+                        location.division || '',
+                        location.postOfficeName || '',
+                        location.postOfficeId || '',
+                        location.officeType || '',
+                        location.contactPersonName || '',
+                        location.contactPersonNo || '',
+                        location.altContactNo || '',
+                        location.contactEmail || '',
+                        location.locationAddress || '',
+                        location.location || '',
+                        location.city || '',
+                        location.state || '',
+                        location.pincode || '',
+                        location.numberOfPosToBeDeployed || '',
+                        location.typeOfPosTerminal || '',
+                        location.dateOfReceiptOfDevice || '',
+                        location.noOfDevicesReceived || '',
+                        location.serialNo || '',
+                        location.installationStatus || '',
+                        location.functionalityStatus || '',
+                        location.issuesIfAny || ''
+                    ]);
+                });
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(exportData);
+                XLSX.utils.book_append_sheet(wb, ws, "POS Data");
+                const filename = `POS_Data_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
+                XLSX.writeFile(wb, filename);
+                alert('Current data exported successfully!');
+            }
+
+            exportToExcel() {
+                this.exportCurrentData();
+            }
+
+            showImportModal() {
+                document.getElementById('importModal').style.display = 'block';
+            }
+
+            closeImportModal() {
+                document.getElementById('importModal').style.display = 'none';
+                document.getElementById('importPreview').classList.add('hidden');
+                document.getElementById('excelFileInput').value = '';
+            }
+
+            handleExcelImport(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                if (typeof XLSX === 'undefined') {
+                    alert('Excel library not loaded. Please refresh the page and try again.');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = e.target.result;
+                        const workbook = XLSX.read(data, { type: 'binary' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                        this.processImportData(jsonData);
+                    } catch (error) {
+                        alert('Error reading Excel file: ' + error.message);
+                    }
+                };
+                reader.readAsBinaryString(file);
+            }
+
+            processImportData(data) {
+                if (data.length < 2) {
+                    alert('Excel file must have at least a header row and one data row');
+                    return;
+                }
+
+                const processedData = [];
+
+                for (let i = 1; i < data.length; i++) {
+                    const row = data[i];
+                    if (!row || row.length === 0) continue;
+
+                    if (!row[1] || !row[2] || !row[11] || !row[12]) continue;
+
+                    const locationData = {
+                        id: this.nextLocationId++,
+                        slNo: processedData.length + 1,
+                        division: row[1] || '',
+                        postOfficeName: row[2] || '',
+                        postOfficeId: row[3] || `AUTO-${Date.now()}`,
+                        officeType: row[4] || 'Sub Post Office',
+                        contactPersonName: row[5] || 'Not Provided',
+                        contactPersonNo: row[6] || '',
+                        altContactNo: row[7] || '',
+                        contactEmail: row[8] || '',
+                        locationAddress: row[9] || '',
+                        location: row[10] || '',
+                        city: row[11] || '',
+                        state: row[12] || '',
+                        pincode: row[13] || '',
+                        numberOfPosToBeDeployed: parseInt(row[14]) || 1,
+                        typeOfPosTerminal: row[15] || 'EZETAP ANDROID X990',
+                        dateOfReceiptOfDevice: row[16] || '',
+                        noOfDevicesReceived: parseInt(row[17]) || 0,
+                        serialNo: row[18] || '',
+                        installationStatus: row[19] || 'Pending',
+                        functionalityStatus: row[20] || 'Not Tested',
+                        issuesIfAny: row[21] || 'None'
+                    };
+
+                    processedData.push(locationData);
+                }
+
+                this.importData = processedData;
+                this.showImportPreview();
+            }
+
+            showImportPreview() {
+                let html = `
+                    <div class="alert alert-success">
+                        <strong>✅ Ready to import ${this.importData.length} locations</strong>
+                    </div>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Post Office</th>
+                                    <th>Division</th>
+                                    <th>City</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                this.importData.slice(0, 10).forEach(location => {
+                    html += `
+                        <tr>
+                            <td>${location.postOfficeName}</td>
+                            <td>${location.division}</td>
+                            <td>${location.city}</td>
+                            <td>${location.installationStatus}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table></div>';
+
+                if (this.importData.length > 10) {
+                    html += `<p><em>Showing first 10 of ${this.importData.length} locations</em></p>`;
+                }
+
+                document.getElementById('importPreviewContent').innerHTML = html;
+                document.getElementById('importPreview').classList.remove('hidden');
+            }
+
+            confirmImport() {
+                if (confirm(`This will replace all existing data with ${this.importData.length} new uploaded data. Continue?`)) {
+                    this.locations = [...this.importData];
+                    this.nextLocationId = Math.max(...this.locations.map(loc => loc.id)) + 1;
+
+                    this.saveToStorage();
+                    this.closeImportModal();
+                    this.updateDashboard();
+
+                    alert(`Successfully imported ${this.importData.length} locations!`);
+                    this.importData = [];
+                }
+            }
+
+            cancelImport() {
+                this.importData = [];
+                document.getElementById('importPreview').classList.add('hidden');
+            }
+
+            // Backup Functions
+            createBackup() {
+                const backupData = {
+                    locations: this.locations,
+                    nextLocationId: this.nextLocationId,
+                    backupDate: new Date().toISOString(),
+                    version: '1.0'
+                };
+
+                const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `POS_Backup_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                alert('Backup created successfully!');
+            }
+
+            restoreBackup() {
+                document.getElementById('backupFileInput').click();
+            }
+
+            handleBackupRestore(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const backupData = JSON.parse(e.target.result);
+
+                        if (confirm('This will replace all current data with the backup. Continue?')) {
+                            this.locations = backupData.locations || [];
+                            this.nextLocationId = backupData.nextLocationId || 1;
+
+                            this.saveToStorage();
+                            this.updateDashboard();
+
+                            alert('Backup restored successfully!');
+                        }
+                    } catch (error) {
+                        alert('Error restoring backup: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            clearAllData() {
+                if (confirm('This will permanently delete all data. Are you sure?')) {
+                    if (confirm('This action cannot be undone. Confirm again to proceed.')) {
+                        this.locations = [];
+                        this.nextLocationId = 1;
+                        this.saveToStorage();
+                        this.updateDashboard();
+                        alert('All data cleared successfully!');
+                    }
+                }
+            }
+
+            printReports() {
+                window.print();
+            }
+        }
+
+        // Initialize the application
+        let tracker;
+
+        // Global functions for HTML onclick handlers
+        function login(username) {
+            tracker.login(username);
+        }
+
+        function logout() {
+            tracker.logout();
+        }
+
+        function showTab(tabName) {
+            tracker.showTab(tabName);
+        }
+
+        function showLocationForm() {
+            tracker.showLocationForm();
+        }
+
+        function closeLocationModal() {
+            tracker.closeLocationModal();
+        }
+
+        function saveLocation(event) {
+            tracker.saveLocation(event);
+        }
+
+        function filterLocations() {
+            tracker.filterLocations();
+        }
+
+        function filterProgressByDivision() {
+            tracker.filterProgressByDivision();
+        }
+
+        function filterProgress() {
+            tracker.filterProgress();
+        }
+
+        function exportDashboardPDF() {
+            tracker.exportDashboardPDF();
+        }
+
+        function exportProgressPDF() {
+            tracker.exportProgressPDF();
+        }
+
+        function exportReportsPDF() {
+            tracker.exportReportsPDF();
+        }
+
+        function printReports() {
+            tracker.printReports();
+        }
+
+        function downloadTemplate() {
+            tracker.downloadTemplate();
+        }
+
+        function exportCurrentData() {
+            tracker.exportCurrentData();
+        }
+
+        function exportToExcel() {
+            tracker.exportToExcel();
+        }
+
+        function showImportModal() {
+            tracker.showImportModal();
+        }
+
+        function closeImportModal() {
+            tracker.closeImportModal();
+        }
+
+        function handleExcelImport(event) {
+            tracker.handleExcelImport(event);
+        }
+
+        function confirmImport() {
+            tracker.confirmImport();
+        }
+
+        function cancelImport() {
+            tracker.cancelImport();
+        }
+
+        function createBackup() {
+            tracker.createBackup();
+        }
+
+        function restoreBackup() {
+            tracker.restoreBackup();
+        }
+
+        function handleBackupRestore(event) {
+            tracker.handleBackupRestore(event);
+        }
+
+        function clearAllData() {
+            tracker.clearAllData();
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            tracker = new AdvancedPOSTracker();
+        });
+    </script>
+</body>
+</html>
 
