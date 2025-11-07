@@ -1062,23 +1062,68 @@
                 }
             }
 
-            saveToStorage() {
-                const data = {
-                    locations: this.locations,
-                    nextLocationId: this.nextLocationId,
-                    lastSaved: new Date().toISOString()
-                };
-                localStorage.setItem('advancedPOSTrackerData', JSON.stringify(data));
-            }
+saveToStorage() {
+    // keep local backup in localStorage for offline/rescue
+    try {
+        const data = {
+            locations: this.locations,
+            nextLocationId: this.nextLocationId,
+            lastSaved: new Date().toISOString()
+        };
+        localStorage.setItem('advancedPOSTrackerData', JSON.stringify(data));
+    } catch(e) {
+        console.warn('localStorage write failed', e);
+    }
 
-            loadFromStorage() {
-                const stored = localStorage.getItem('advancedPOSTrackerData');
-                if (stored) {
-                    const data = JSON.parse(stored);
-                    this.locations = data.locations || [];
-                    this.nextLocationId = data.nextLocationId || 1;
+    // Attempt to sync each location to server (create/update)
+    // naive sync: send each location (server will persist duplicates less ideally)
+    (async () => {
+        try {
+            // Fetch existing server records to know which to create vs update
+            const serverRows = await api_getLocations();
+            const serverMap = {};
+            serverRows.forEach(r => { serverMap[r.id] = r; });
+
+            for (const loc of this.locations) {
+                if (loc.id && serverMap[loc.id]) {
+                    // update
+                    await api_updateLocation(loc.id, loc);
+                } else {
+                    // create
+                    const created = await api_createLocation(loc);
+                    // update local id if server assigned new id
+                    if (created && created.id && (!loc.id || loc.id !== created.id)) {
+                        loc.id = created.id;
+                    }
                 }
             }
+        } catch (err) {
+            console.warn('Server sync failed', err);
+        }
+    })();
+}
+
+async loadFromStorage() {
+    try {
+        const serverData = await api_getLocations();
+        if (Array.isArray(serverData) && serverData.length) {
+            this.locations = serverData;
+            // nextLocationId = max id + 1
+            this.nextLocationId = (Math.max(...this.locations.map(l => l.id)) || 0) + 1;
+        } else {
+            this.locations = [];
+            this.nextLocationId = 1;
+        }
+    } catch (err) {
+        console.warn('Could not load from server, falling back to sample/local data', err);
+        const stored = localStorage.getItem('advancedPOSTrackerData');
+        if (stored) {
+            const data = JSON.parse(stored);
+            this.locations = data.locations || [];
+            this.nextLocationId = data.nextLocationId || 1;
+        }
+    }
+}
 
             setupEventListeners() {
                 window.addEventListener('click', (event) => {
